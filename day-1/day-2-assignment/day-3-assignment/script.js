@@ -1,99 +1,93 @@
 let notes = [
-    { id: 1, text: "Buy milk and bread", category: "personal" },
-    { id: 2, text: "Finish the day-3-assignment", category: "study" },
-    { id: 3, text: "Email the project report to grace", category: "work" },
-    { id: 4, text: "Revise javascript arrays", category: "study" },
-    { id: 5, text: "Call mum", category: "personal" }
+  { id: 1, text: "Buy milk and bread", category: "personal" },
+  { id: 2, text: "Finish the Day 3 assignment", category: "study" },
+  { id: 3, text: "Email the project report to Grace", category: "work" },
+  { id: 4, text: "Revise JavaScript arrays", category: "study" },
+  { id: 5, text: "Call mum", category: "personal" },
 ];
-
-function countbycategory() {
-    return notes.reduce((counts, note) => {
-        counts[note.category] = (counts[note.category] || 0) + 1;
-        return counts;
-    }, { personal: 0, study: 0, work: 0 });
-}
-
-// 1. search notes, ignoring uppercase and lowercase
+ 
+const CATEGORIES = ["personal", "work", "study"];
+ 
+// 1. Keep only notes whose lower-case text contains the lower-case word
 function searchNotes(word) {
-    return notes.filter(note =>
-        note.text.toLowerCase().includes(String(word).toLowerCase())
-    );
+  const search = word.toLowerCase();
+  return notes.filter((note) => note.text.toLowerCase().includes(search));
 }
-
-console.log("3. category counts:", countbycategory());
-// expected: (personal: 2, study: 2, work: 1)
-
-
-// 4. create a summary of the notes
+ 
+// 2. Start with the first note as the "longest so far", then compare
+function longestNote() {
+  if (notes.length === 0) return null;
+  let longest = notes[0];
+  for (const note of notes) {
+    if (note.text.length > longest.text.length) {
+      longest = note;
+    }
+  }
+  return longest;
+}
+ 
+// 3. Start every category at 0, then add 1 for each note
+function countByCategory() {
+  const counts = { personal: 0, work: 0, study: 0 };
+  notes.forEach((note) => {
+    counts[note.category]++;
+  });
+  return counts;
+}
+ 
+// 4. Build a readable sentence from the counts
 function getSummary() {
-    let counts = countbycategory();
-    let total = notes.length;
-
-    return `You have ${total} notes (${counts.personal} personal, ${counts.study} study, ${counts.work} work)`;
+  const counts = countByCategory();
+  const word = notes.length === 1 ? "note" : "notes";
+  return (
+    `${notes.length} ${word}: ` +
+    `${counts.personal} personal, ${counts.work} work, ${counts.study} study.`
+  );
 }
-
-console.log("4. summary:", getSummary());
-// expected: You have 5 notes (2 personal, 2 study, 1 work)
-
-// 5. Check if a note with already exists
+ 
+// 5. true if ANY existing note has the same cleaned text
 function isDuplicate(text) {
-    let cleanedText = String(text).trim().toLowerCase();
-
-    return notes.some(note => note.text.trim().toLowerCase() === cleanedText);
+  const cleaned = text.trim().toLowerCase();
+  return notes.some((note) => note.text.toLowerCase() === cleaned);
 }
-
-console.log("5. isDuplicate:", isDuplicate("call mum"));
-// expected: true
-
-console.log("5. check for a new text isDuplicate:", isDuplicate("read a novel"));
-// expected: false
-
-// Add a note only if it's valid
+ 
+// 6. Check every rule; stop at the first one that fails
 function addNote(text, category) {
-    let cleanedText = String(text).trim();
-
-    if (cleanedText.length < 1 || cleanedText.length > 200) {
-        console.log("Note rejected: text must be 1–200 characters.");
-        return false;
-    }
-
-    if (!["personal", "work", "study"].includes(category)) {
-        console.log("Note rejected: invalid category.");
-        return false;
-    }
-
-    if (isDuplicate(cleanedText)) {
-        console.log("Note rejected: this note already exists.");
-        return false;
-    }
-
-    let newId = notes.length === 0
-        ? 1
-        : Math.max(...notes.map(note => note.id)) + 1;
-
-    notes.push({
-        id: newId,
-        text: cleanedText,
-        category: category
-    });
-
-    return true;
+  const cleaned = text.trim();
+ 
+  if (cleaned.length === 0 || cleaned.length > 200) {
+    console.log("Rejected: a note must be 1-200 characters.");
+    return false;
+  }
+  if (isDuplicate(cleaned)) {
+    console.log(`Rejected: "${cleaned}" already exists.`);
+    return false;
+  }
+  if (!CATEGORIES.includes(category)) {
+    console.log(`Rejected: "${category}" is not a valid category.`);
+    return false;
+  }
+ 
+  notes.push({ id: Date.now(), text: cleaned, category: category });
+  console.log(`Added: "${cleaned}" (${category})`);
+  return true;
 }
-
-console.log("6. Add valid note:", addNote("Read a novel", "personal"));
-// Expected: true
-
-console.log("Add duplicate note:", addNote("  READ A NOVEL  ", "personal"));
-// Expected: false
-// Reason: Note rejected: this note already exists.
-
-console.log("Add invalid category:", addNote("Prepare dinner", "home"));
-// Expected: false
-// Reason: Note rejected: invalid category.
-
-console.log("Add empty note:", addNote("   ", "personal"));
-// Expected: false
-// Reason: Note rejected: text must be 1–200 characters.
-
-console.log("Final notes:", notes);
-// Expected: 6 notes after the one successful addition.
+ 
+// ---------------- Tests ----------------
+console.log(searchNotes("revise"));   // [ {id: 4, text: "Revise...", ...} ]
+console.log(searchNotes("BREAD"));    // [ {id: 1, ...} ] - case does not matter
+console.log(searchNotes("holiday"));  // [] - no matches
+ 
+console.log(longestNote().text);      // "Email the project report to Grace"
+ 
+console.log(countByCategory());       // { personal: 2, work: 1, study: 2 }
+console.log(getSummary());            // "5 notes: 2 personal, 1 work, 2 study."
+ 
+console.log(isDuplicate("  call MUM ")); // true
+console.log(isDuplicate("Call dad"));    // false
+ 
+console.log(addNote("Read chapter 4", "study")); // Added ... then true
+console.log(addNote("call mum", "personal"));    // Rejected (duplicate), false
+console.log(addNote("   ", "work"));             // Rejected (length), false
+console.log(addNote("Plan trip", "holiday"));    // Rejected (category), false
+console.log(getSummary());            // "6 notes: 2 personal, 1 work, 3 study."
